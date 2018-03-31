@@ -1,8 +1,6 @@
 import java.io.IOException;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.HTableDescriptor;
@@ -10,25 +8,29 @@ import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
+import org.apache.hadoop.hbase.client.Table;
+import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.io.compress.Compression.Algorithm;
 
-public class CreateTable {
+public class TableModel {
 
-    private Configuration config;
+    private static Configuration config;
 
-    public CreateTable() {
-        config = HBaseConfiguration.create();
+    public TableModel(Configuration conf) {
+        config = conf;
     }
 
     private static void createOrOverwrite(Admin admin, HTableDescriptor table) throws IOException {
         if (admin.tableExists(table.getTableName())) {
+            System.out.println("Table exists. Deleting.");
             admin.disableTable(table.getTableName());
             admin.deleteTable(table.getTableName());
         }
         admin.createTable(table);
     }
 
-    public static void createSchemaTables(String tableName, String... columnFamilyNames) throws IOException {
+    public void createSchemaTables(String tableName, String... columnFamilyNames) throws IOException {
         try (Connection connection = ConnectionFactory.createConnection(config);
              Admin admin = connection.getAdmin()) {
 
@@ -39,16 +41,19 @@ public class CreateTable {
 
             System.out.print("Creating table. ");
             createOrOverwrite(admin, table);
-            System.out.println(" Done.");
+            System.out.println("Done.");
         }
     }
 
-    public static void main(String... args) throws IOException {
+    public void insertData(String tableName, String key, String cf, String attr, String value) throws IOException {
+        try (Connection connection = ConnectionFactory.createConnection(config);
+             Table table = connection.getTable(TableName.valueOf(tableName))) {
 
-        //Add any necessary configuration files (hbase-site.xml, core-site.xml)
-        config.addResource(new Path(System.getenv("HBASE_CONF_DIR"), "hbase-site.xml"));
-        config.addResource(new Path(System.getenv("HADOOP_CONF_DIR"), "core-site.xml"));
-        createSchemaTables(config);
-        modifySchema(config);
+            Put p = new Put(Bytes.toBytes(key));
+            p.addColumn(Bytes.toBytes(cf), Bytes.toBytes(attr), Bytes.toBytes(value));
+            table.put(p);
+
+            System.out.println("data inserted");
+        }
     }
 }
