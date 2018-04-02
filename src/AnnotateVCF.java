@@ -20,7 +20,7 @@ import org.apache.hadoop.hbase.util.Bytes;
 
 public class AnnotateVCF {
 
-    public static class MyMapper extends Mapper<Object, Text, Text, Text> {
+    public static class AnnotateMapper extends Mapper<Object, Text, Text, Text> {
         private static final String TABLE_NAME = "Annotation";
         private static final String CF_DEFAULT = "cosmic";
         private static final String ATTR = "content";
@@ -30,12 +30,12 @@ public class AnnotateVCF {
 
         @Override
         public void setup(Context context) throws IOException {
-            System.out.println("!!!!!!!!!!!!!!!"+System.getenv("HADOOP_CLASSPATH"));
             Configuration config = HBaseConfiguration.create();
             Connection connection = ConnectionFactory.createConnection(config);
             table = connection.getTable(TableName.valueOf(TABLE_NAME));
         }
 
+        @Override
         public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
             String[] attrs = value.toString().split(" ");
             String rowKey = String.join(".", attrs[0], attrs[1], attrs[2], attrs[4]);
@@ -44,9 +44,11 @@ public class AnnotateVCF {
             g.addColumn(Bytes.toBytes(CF_DEFAULT), Bytes.toBytes(ATTR));
             Result result = table.get(g);
 
-            byte [] cell = result.getValue(Bytes.toBytes(CF_DEFAULT), Bytes.toBytes(ATTR));
-            annotation.set(Bytes.toString(cell));
-            context.write(mutation, annotation);
+            if (!result.isEmpty()) {
+                byte [] cell = result.getValue(Bytes.toBytes(CF_DEFAULT), Bytes.toBytes(ATTR));
+                annotation.set(Bytes.toString(cell));
+                context.write(mutation, annotation);
+            }
         }
 
         @Override
@@ -62,7 +64,7 @@ public class AnnotateVCF {
         conf.addResource(new Path(System.getenv("HADOOP_CONF_DIR"), "core-site.xml"));
         Job job = Job.getInstance(conf, "AnnotateVCF");
         job.setJarByClass(AnnotateVCF.class);
-        job.setMapperClass(MyMapper.class);
+        job.setMapperClass(AnnotateMapper.class);
         job.setNumReduceTasks(0);
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(Text.class);
