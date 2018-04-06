@@ -2,13 +2,14 @@ import java.io.IOException;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
-import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.conf.Configured;
+import org.apache.hadoop.util.Tool;
+import org.apache.hadoop.util.ToolRunner;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Table;
@@ -18,7 +19,7 @@ import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
 
-public class AnnotateVCF {
+public class AnnotateVCF extends Configured implements Tool {
 
     public static class AnnotateMapper extends Mapper<Object, Text, Text, Text> {
         private static final String TABLE_NAME = "Annotation";
@@ -58,10 +59,16 @@ public class AnnotateVCF {
     }
 
     public static void main(String[] args) throws Exception {
-        Configuration conf = new Configuration();
+        int res = ToolRunner.run(new Configuration(), new AnnotateVCF(), args);
+        System.exit(res);
+    }
+
+    @Override
+    public int run(String[] args) throws Exception {
+        Configuration conf = this.getConf();
         // Add any necessary configuration files (hbase-site.xml, core-site.xml)
-        conf.addResource(new Path(System.getenv("HBASE_CONF_DIR"), "hbase-site.xml"));
-        conf.addResource(new Path(System.getenv("HADOOP_CONF_DIR"), "core-site.xml"));
+        // conf.addResource(new Path(System.getenv("HBASE_CONF_DIR"), "hbase-site.xml"));
+        // conf.addResource(new Path(System.getenv("HADOOP_CONF_DIR"), "core-site.xml"));
         Job job = Job.getInstance(conf, "AnnotateVCF");
         job.setJarByClass(AnnotateVCF.class);
         job.setMapperClass(AnnotateMapper.class);
@@ -70,6 +77,6 @@ public class AnnotateVCF {
         job.setOutputValueClass(Text.class);
         FileInputFormat.addInputPath(job, new Path(args[0]));
         FileOutputFormat.setOutputPath(job, new Path(args[1]));
-        System.exit(job.waitForCompletion(true) ? 0 : 1);
+        return job.waitForCompletion(true) ? 0 : 1;
     }
 }

@@ -14,8 +14,8 @@ public class HbaseVCF {
         Configuration config = HBaseConfiguration.create();
 
         // Add any necessary configuration files (hbase-site.xml, core-site.xml)
-        config.addResource(new Path(System.getenv("HBASE_CONF_DIR"), "hbase-site.xml"));
-        config.addResource(new Path(System.getenv("HADOOP_CONF_DIR"), "core-site.xml"));
+        // config.addResource(new Path(System.getenv("HBASE_CONF_DIR"), "hbase-site.xml"));
+        // config.addResource(new Path(System.getenv("HADOOP_CONF_DIR"), "core-site.xml"));
 
         TableModel db = new TableModel(config);
         db.createSchemaTables(TABLE_NAME, CF_DEFAULT);
