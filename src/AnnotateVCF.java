@@ -23,8 +23,8 @@ public class AnnotateVCF extends Configured implements Tool {
 
     public static class AnnotateMapper extends Mapper<Object, Text, Text, Text> {
         private static final String TABLE_NAME = "Annotation";
-        private static final String CF_DEFAULT = "cosmic";
-        private static final String ATTR = "content";
+        private static final String CF_DEFAULT = "content";
+        private static final String ATTR = "cosmic";
         private Table table;
         private Text mutation = new Text();
         private Text annotation = new Text();

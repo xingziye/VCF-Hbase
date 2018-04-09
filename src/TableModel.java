@@ -39,7 +39,7 @@ public class TableModel {
                 table.addFamily(new HColumnDescriptor(cf).setCompressionType(Algorithm.NONE));
             }
 
-            System.out.print("Creating table. ");
+            System.out.println("Creating table " + tableName);
             createOrOverwrite(admin, table);
             System.out.println("Done.");
         }
