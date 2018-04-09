@@ -65,6 +65,12 @@ The KeyValue pair emits is simply the row key and its cell in Hbase, and they ar
 job.setNumReduceTasks(0);
 ```
 
+### Join Table
+
+Consider that if both vcf file and annotation table are imported into Hbase database, we need to support a join operation to annotate our dataset. There are multiple ways to implement this operation. Although mapper-side join is more efficient for two sorted datasets, here we chose a reducer-side join algorithm as general solution.
+
+The VCF table is using the same row key structure as above. `MultiTableInputFormat` allows us to put multiple tables as data source for mapper. Mapper will simply emit the row key and the corresponding column value: empty value for VCF table, and annotation text for Annotation table. Then we combine and reduce the result to see if the row key comes from both table. If so, we write the annotation text to the output file.
+
 ## Building
 
 First build `HbaseVCF` to load the sample Annotation Table data:
@@ -79,8 +85,17 @@ Then build Hadoop job to map input data to annotate:
 $ hadoop com.sun.tools.javac.Main AnnotateVCF.java
 $ jar cf av.jar AnnotateVCF*.class
 
-$ hadoop jar av.jar AnnotateVCF /input /output
+$ hadoop jar av.jar AnnotateVCF -libjars $(hbase mapredcp | tr ':' ',') /input /output
 ```
+
+The similar procedure for join two tables to annotate:
+```
+$ hadoop com.sun.tools.javac.Main JoinVCF.java
+$ jar cf jv.jar JoinVCF*.class
+
+$ hadoop jar jv.jar JoinVCF -libjars $(hbase mapredcp | tr ':' ',') /output
+```
+Notice there is no input directory.
 
 ## Reference
 
